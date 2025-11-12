@@ -784,14 +784,14 @@ export const respondToClarificationRequest = mutation({
     ctx: MutationCtx,
     { clarificationId, responseText, responseAttachments }
   ) => {
-    const { userId } = await getCurrentProfile(ctx);
+    const { userId, profile } = await getCurrentProfile(ctx);
 
     const clarification = await ctx.db.get(clarificationId);
     if (!clarification) {
       throw new Error("Clarification request not found");
     }
 
-    // Verify user is PI or team member of the proposal
+    // Verify user is PI, team member, or admin of the proposal
     const proposal = await ctx.db.get(clarification.proposalId);
     if (!proposal) {
       throw new Error("Proposal not found");
@@ -799,11 +799,12 @@ export const respondToClarificationRequest = mutation({
 
     const canRespond =
       proposal.principalInvestigator === userId ||
-      (proposal.teamMembers ?? []).includes(userId);
+      (proposal.teamMembers ?? []).includes(userId) ||
+      isAdminRole(profile.role);
 
     if (!canRespond) {
       throw new Error(
-        "Only the PI or team members can respond to clarification requests"
+        "Only the PI, team members, or admins can respond to clarification requests"
       );
     }
 

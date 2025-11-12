@@ -1821,23 +1821,21 @@ export const getProposalEvaluationsForOwner = query({
     proposalId: v.id("proposals"),
   },
   handler: async (ctx: QueryCtx, { proposalId }) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
-      throw new Error("Authentication required");
-    }
+    const { userId, profile } = await getCurrentProfile(ctx);
 
     const proposal = await ctx.db.get(proposalId);
     if (!proposal) {
       return null;
     }
 
-    // Verify access: Must be PI or team member
+    // Verify access: Must be PI, team member, or admin
+    const isAdmin = profile.role === "sysadmin" || profile.role === "admin";
     const isPIOrTeam =
       proposal.principalInvestigator === userId ||
       (proposal.teamMembers ?? []).includes(userId);
 
-    if (!isPIOrTeam) {
-      throw new Error("Access denied: Only PI and team members can view evaluations");
+    if (!isAdmin && !isPIOrTeam) {
+      throw new Error("Access denied: Only PI, team members, and admins can view evaluations");
     }
 
     // Only show evaluations if proposal is submitted or later
