@@ -26,6 +26,7 @@ import {
   Star,
   MessageSquare,
   TrendingUp,
+  Edit,
 } from "lucide-react";
 import TessellationHeader from "@/components/TessellationHeader";
 

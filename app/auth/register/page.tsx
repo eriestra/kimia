@@ -4,7 +4,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, UserPlus } from "lucide-react";
+import { ArrowLeft, UserPlus, AlertCircle } from "lucide-react";
 
 type UserRole =
   | "sysadmin"
@@ -61,7 +61,25 @@ export default function RegisterPage() {
       await signIn("password", formData);
       router.push("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create account");
+      // Translate Convex Auth errors to user-friendly messages
+      let errorMessage = "Failed to create account. Please try again.";
+
+      if (err instanceof Error) {
+        const msg = err.message.toLowerCase();
+
+        if (msg.includes("already exists") || msg.includes("duplicate")) {
+          errorMessage = "An account with this email already exists. Please sign in instead.";
+        } else if (msg.includes("invalid email")) {
+          errorMessage = "Invalid email address. Please check and try again.";
+        } else if (msg.includes("network") || msg.includes("fetch")) {
+          errorMessage = "Network error. Please check your connection and try again.";
+        } else {
+          // Show original message if it's not a technical error
+          errorMessage = err.message.includes("Error:") ? errorMessage : err.message;
+        }
+      }
+
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -93,8 +111,11 @@ export default function RegisterPage() {
           </div>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-500/20 backdrop-blur-lg border border-red-500/30 rounded-xl text-red-200 text-sm">
-              {error}
+            <div className="mb-6 p-4 bg-red-500/20 backdrop-blur-lg border border-red-500/30 rounded-xl text-red-100 text-sm animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-300 flex-shrink-0 mt-0.5" />
+                <p className="flex-1">{error}</p>
+              </div>
             </div>
           )}
 
